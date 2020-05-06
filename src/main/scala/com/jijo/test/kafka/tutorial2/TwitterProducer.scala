@@ -26,7 +26,7 @@ object TwitterProducer extends App {
     val producer:KafkaProducer[String,String] = createKafkaProducer()
 
     //add a shutdown hook
-    Runtime.getRuntime.addShutdownHook(new Thread() => {
+    Runtime.getRuntime.addShutdownHook(new Thread {
       println("Shutting down the application")
       client.stop()
       producer.close()
@@ -44,7 +44,7 @@ object TwitterProducer extends App {
             case x => println("Something bad happened",x)
           }
 
-        }))
+        })
       }
     }
     println("End of execution!")
