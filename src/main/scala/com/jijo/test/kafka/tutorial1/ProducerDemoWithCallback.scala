@@ -4,7 +4,7 @@ import java.util.Properties
 
 import org.apache.kafka.clients.producer._
 import org.apache.kafka.common.serialization.StringSerializer
-import org.slf4j.{Logger, LoggerFactory}
+import org.slf4j.LoggerFactory
 
 /**
  * Observe data using the following cli command
@@ -23,29 +23,32 @@ object ProducerDemoWithCallback extends App {
   // create the producer
   val producer: KafkaProducer[String, String] = new KafkaProducer[String, String](props)
 
-  // create a producer record
-
-  val record: ProducerRecord[String, String] =
-    new ProducerRecord[String, String]("first_topic", "hello_world")
 
   // send the data - asynchronous
-  producer.send(record, new Callback {
-    override def onCompletion(metadata: RecordMetadata, exception: Exception): Unit = {
-      if (exception == null) {
-        logger.info(
-          s"""
-             |Recieved new metadata
-             |Topic : ${metadata.topic()}
-             |Partition: ${metadata.partition()}
-             |Offset: ${metadata.offset()}
-             |Timestamp: ${metadata.timestamp()}
-             |""".stripMargin)
-      }else{
-        logger.error("Error while processing",exception)
-      }
+  for (i <- 1 to 10) {
 
-    }
-  })
+    // create a producer record
+    val record: ProducerRecord[String, String] =
+      new ProducerRecord[String, String]("first_topic", "hello_world" + i)
+
+    producer.send(record, new Callback {
+      override def onCompletion(metadata: RecordMetadata, exception: Exception): Unit = {
+        if (exception == null) {
+          logger.info(
+            s"""
+               |Recieved new metadata
+               |Topic : ${metadata.topic()}
+               |Partition: ${metadata.partition()}
+               |Offset: ${metadata.offset()}
+               |Timestamp: ${metadata.timestamp()}
+               |""".stripMargin)
+        } else {
+          logger.error("Error while processing", exception)
+        }
+
+      }
+    })
+  }
 
   // flush data
   producer.flush()
