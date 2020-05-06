@@ -1,5 +1,6 @@
 package  com.jijo.test.kafka.tutorial2
 
+import java.util.Properties
 import java.util.concurrent.{BlockingQueue, LinkedBlockingQueue, TimeUnit}
 
 import com.google.common.collect.Lists
@@ -8,6 +9,7 @@ import com.twitter.hbc.core.endpoint.StatusesFilterEndpoint
 import com.twitter.hbc.core.processor.StringDelimitedProcessor
 import com.twitter.hbc.core.{Client, Constants, Hosts, HttpHosts}
 import com.twitter.hbc.httpclient.auth.{Authentication, OAuth1}
+import org.apache.kafka.clients.producer.{Callback, KafkaProducer, ProducerRecord, RecordMetadata}
 
 object TwitterProducer extends App {
 
@@ -20,6 +22,15 @@ object TwitterProducer extends App {
     val client: Client = createTwitterClient(msgQueue)
     client.connect()
 
+    //create kafka producer
+    val producer:KafkaProducer[String,String] = createKafkaProducer()
+
+    //add a shutdown hook
+    Runtime.getRuntime.addShutdownHook(new Thread() => {
+      println("Shutting down the application")
+      client.stop()
+      producer.close()
+    })
     while (!client.isDone) {
       var msg: String = ""
       try {
@@ -28,10 +39,24 @@ object TwitterProducer extends App {
         case e: InterruptedException => e.printStackTrace(); client.stop()
       }
       if (msg != "") {
-        println(msg)
+        producer.send(new ProducerRecord("twitter_tweets",null,msg),new Callback {
+          override def onCompletion(metadata: RecordMetadata, exception: Exception): Unit = exception match {
+            case x => println("Something bad happened",x)
+          }
+
+        }))
       }
     }
     println("End of execution!")
+  }
+
+  def createKafkaProducer():KafkaProducer[String,String] = {
+    val props = new Properties()
+    props.put("bootstrap.servers", "localhost:9092")
+    props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer")
+    props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer")
+    val producer = new KafkaProducer[String, String](props)
+    producer
   }
 
   def createTwitterClient(msgQueue: BlockingQueue[String]): Client = {
