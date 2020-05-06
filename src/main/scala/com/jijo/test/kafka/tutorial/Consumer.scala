@@ -1,4 +1,4 @@
-package com.jijo.test.kafka
+package com.jijo.test.kafka.tutorial
 
 import java.time.Duration
 import java.util
@@ -6,7 +6,6 @@ import java.util.Properties
 
 import org.apache.kafka.clients.consumer.{ConsumerConfig, KafkaConsumer}
 import org.apache.kafka.common.serialization.StringDeserializer
-import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.JavaConverters._
 
@@ -15,7 +14,7 @@ object Consumer{
   def main(args: Array[String]): Unit = {
     consumeFromKafka("quick_start")
   }
-  def consumeFromKafka(topic: String) = {
+  def consumeFromKafka(topic: String):Unit = {
 
     val bootstrapServers = "localhost:9092"
     val groupId = "my-first-application"

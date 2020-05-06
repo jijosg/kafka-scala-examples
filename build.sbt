@@ -6,16 +6,11 @@ ThisBuild / organization     := "com.jijo"
 
 lazy val root = (project in file("."))
   .settings(
-    name := "sparkMLNLP",
+    name := "kafka-scala-exercises",
     libraryDependencies += scalaTest % Test,
-    libraryDependencies += sparkCore,
-    libraryDependencies += sparkML ,
-    libraryDependencies += sparkSQL,
-    libraryDependencies += "com.databricks" %% "spark-xml" % "0.8.0",
-    libraryDependencies += "com.github.benfradet" %% "struct-type-encoder" % "0.5.0",
     libraryDependencies += "org.apache.kafka" %% "kafka" % "2.4.1",
-    libraryDependencies += "org.apache.kafka" % "kafka-clients" % "2.4.1"
+    libraryDependencies += "org.apache.kafka" % "kafka-clients" % "2.4.1",
+    libraryDependencies += "com.twitter" % "hbc-core" % "2.2.0"
 
 
-
-  )
+)

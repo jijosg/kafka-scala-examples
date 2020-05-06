@@ -1,6 +1,7 @@
-package com.jijo.test.kafka
+package com.jijo.test.kafka.tutorial
 
 import java.util.Properties
+
 import org.apache.kafka.clients.producer._
 
 object Producer {
