@@ -31,8 +31,7 @@ object ProducerDemoWithCallback extends App {
     val record: ProducerRecord[String, String] =
       new ProducerRecord[String, String]("first_topic", "hello_world" + i)
 
-    producer.send(record, new Callback {
-      override def onCompletion(metadata: RecordMetadata, exception: Exception): Unit = {
+    producer.send(record, (metadata: RecordMetadata, exception: Exception) => {
         if (exception == null) {
           logger.info(
             s"""
@@ -47,7 +46,7 @@ object ProducerDemoWithCallback extends App {
         }
 
       }
-    })
+    )
   }
 
   // flush data
