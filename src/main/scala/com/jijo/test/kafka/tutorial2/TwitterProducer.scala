@@ -10,9 +10,15 @@ import com.twitter.hbc.core.processor.StringDelimitedProcessor
 import com.twitter.hbc.core.{Client, Constants, Hosts, HttpHosts}
 import com.twitter.hbc.httpclient.auth.{Authentication, OAuth1}
 import org.apache.kafka.clients.producer.{Callback, KafkaProducer, ProducerRecord, RecordMetadata}
+import org.slf4j.LoggerFactory
 
 object TwitterProducer extends App {
+  val consumerKey = args(0)
+  val consumerSecret = args(1)
+  val token = args(2)
+  val secret = args(3)
 
+  val logger = LoggerFactory.getLogger(TwitterProducer.getClass)
   //create a twitter client
   TwitterProducer.run()
 
@@ -25,12 +31,12 @@ object TwitterProducer extends App {
     //create kafka producer
     val producer:KafkaProducer[String,String] = createKafkaProducer()
 
-    //add a shutdown hook
+    /*//add a shutdown hook
     Runtime.getRuntime.addShutdownHook(new Thread {
       println("Shutting down the application")
       client.stop()
       producer.close()
-    })
+    })*/
     while (!client.isDone) {
       var msg: String = ""
       try {
@@ -39,15 +45,16 @@ object TwitterProducer extends App {
         case e: InterruptedException => e.printStackTrace(); client.stop()
       }
       if (msg != "") {
-        producer.send(new ProducerRecord("twitter_tweets",null,msg),new Callback {
-          override def onCompletion(metadata: RecordMetadata, exception: Exception): Unit = exception match {
-            case x => println("Something bad happened",x)
+        logger.info(msg)
+        /*producer.send(new ProducerRecord("twitter_tweets",msg),
+          (metadata: RecordMetadata, exception: Exception) => exception match {
+            case x => logger.error("Something bad happened",x)
           }
 
-        })
+      )*/
       }
     }
-    println("End of execution!")
+    logger.info("End of execution!")
   }
 
   def createKafkaProducer():KafkaProducer[String,String] = {
@@ -60,10 +67,6 @@ object TwitterProducer extends App {
   }
 
   def createTwitterClient(msgQueue: BlockingQueue[String]): Client = {
-    val consumerKey = "WsAeTgDSBnIwBZWw6KaijPN9b"
-    val consumerSecret = "BfCqpAJiAQRGRl8PAo964CNEG6eck6lV6kGndZypel4"
-    val token = "2932095118-XtnODAvArwq61KA8ZnirEgBBchd66mWwQIwpblO"
-    val secret = "5AMehVYQH9wr17pGPJjavQS2CFJribm0l2YGWO3zJ2uDS"
 
     val hosebirdHosts: Hosts = new HttpHosts(Constants.STREAM_HOST)
     val hosebirdEndpoint: StatusesFilterEndpoint = new StatusesFilterEndpoint()
