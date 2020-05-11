@@ -19,27 +19,28 @@ object ConsumerDemoWithThreads extends App {
 
   val latch: CountDownLatch = new CountDownLatch(1)
   // create the consumer runnable
-  logger.info("Creating consumer")
+  logger.info("Creating consumer thread")
   val consumerRunnable: Runnable = new ConsumerRunnable(bootstrapServers, groupId, topic, latch)
   val myThread: Thread = new Thread(consumerRunnable)
   myThread.start()
 
   // add a shutdown hook
-  Runtime.getRuntime.addShutdownHook(new Thread(()=>{
+  Runtime.getRuntime.addShutdownHook(new Thread(() => {
     logger.info("Caught shutdown hook")
     consumerRunnable.asInstanceOf[ConsumerRunnable].shutdown()
-    try{
+    try {
       latch.await()
-    }catch {
-      case e:InterruptedException => e.printStackTrace()
+    } catch {
+      case e: InterruptedException => e.printStackTrace()
     }
-    logger.error("Application exited")
+    logger.error("Application has exited")
   }))
 
   try {
+    // makes us wait till the application has completed
     latch.await()
   } catch {
-    case e: InterruptedException => logger.error("Application got interrupted ",e)
+    case e: InterruptedException => logger.error("Application got interrupted ", e)
   } finally {
     logger.info("Application is closing")
   }
@@ -47,15 +48,13 @@ object ConsumerDemoWithThreads extends App {
 
 class ConsumerRunnable(val bootstrapServers: String, val groupId: String,
                        val topic: String, val latch: CountDownLatch) extends Runnable {
-  val logger = LoggerFactory.getLogger(classOf[ConsumerRunnable])
-
   val props = new Properties()
+  private val logger = LoggerFactory.getLogger(classOf[ConsumerRunnable])
   props.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers)
   props.setProperty(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, classOf[StringDeserializer].getName)
   props.setProperty(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, classOf[StringDeserializer].getName)
   props.setProperty(ConsumerConfig.GROUP_ID_CONFIG, groupId)
   props.setProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest")
-
   // create a consumer
   private val consumer = new KafkaConsumer[String, String](props)
   // subscribe the consumer to topic(s)
@@ -78,6 +77,7 @@ class ConsumerRunnable(val bootstrapServers: String, val groupId: String,
       case e: WakeupException => logger.info("Recieved shutdown signal")
     } finally {
       consumer.close()
+      // tell our main code we're done with consumer
       latch.countDown()
     }
   }
@@ -85,6 +85,7 @@ class ConsumerRunnable(val bootstrapServers: String, val groupId: String,
   def shutdown() = {
     // the wakeup() method is a special method to interrupt consumer.poll
     // it will throw an exception WakeupException
+    logger.info("Inside Consumer Runnable shutdown")
     consumer.wakeup()
   }
 }

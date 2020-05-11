@@ -6,8 +6,8 @@ import org.apache.kafka.clients.producer.{KafkaProducer, ProducerConfig, Produce
 import org.apache.kafka.common.serialization.StringSerializer
 
 /**
- *  Observe data using the following cli command
- *  kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic first_topic --group my-first-application
+ * Observe data using the following cli command
+ * kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic first_topic --group my-first-application
  */
 object ProducerDemo extends App {
 
@@ -23,8 +23,8 @@ object ProducerDemo extends App {
 
   // create a producer record
 
-  val record:ProducerRecord[String,String] =
-    new ProducerRecord[String,String]("first_topic","hello_world")
+  val record: ProducerRecord[String, String] =
+    new ProducerRecord[String, String]("first_topic", "hello_world")
 
   // send the data - asynchronous
   producer.send(record)
