@@ -27,7 +27,7 @@ object ConsumerDemoWithThreads extends App {
   // add a shutdown hook
   Runtime.getRuntime.addShutdownHook(new Thread(()=>{
     logger.info("Caught shutdown hook")
-
+    consumerRunnable.asInstanceOf[ConsumerRunnable].shutdown()
     try{
       latch.await()
     }catch {
