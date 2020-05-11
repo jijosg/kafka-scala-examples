@@ -24,7 +24,7 @@ object ConsumerDemo extends App {
   val consumer = new KafkaConsumer[String, String](props)
 
   // subscribe the consumer to topic(s)
-  consumer.subscribe(util.Arrays.asList("first_topic"))
+  consumer.subscribe(util.Collections.singleton("first_topic")) // util.Arrays.asList("first_topic")
 
   // poll for new data
   while (true) {
