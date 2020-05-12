@@ -1,4 +1,4 @@
-package  com.jijo.test.kafka.tutorial2
+package com.jijo.test.kafka.tutorial2
 
 import java.util.Properties
 import java.util.concurrent.{BlockingQueue, LinkedBlockingQueue, TimeUnit}
@@ -9,9 +9,13 @@ import com.twitter.hbc.core.endpoint.StatusesFilterEndpoint
 import com.twitter.hbc.core.processor.StringDelimitedProcessor
 import com.twitter.hbc.core.{Client, Constants, Hosts, HttpHosts}
 import com.twitter.hbc.httpclient.auth.{Authentication, OAuth1}
-import org.apache.kafka.clients.producer.{Callback, KafkaProducer, ProducerRecord, RecordMetadata}
+import org.apache.kafka.clients.producer.{KafkaProducer, ProducerRecord, RecordMetadata}
 import org.slf4j.LoggerFactory
 
+/**
+ * kafka-topics.sh --zookeeper localhost:2181  --create  --topic twitter_tweets --partition 6 --replication-factor 1
+ *
+ */
 object TwitterProducer extends App {
   val consumerKey = args(0)
   val consumerSecret = args(1)
@@ -19,45 +23,52 @@ object TwitterProducer extends App {
   val secret = args(3)
 
   val logger = LoggerFactory.getLogger(TwitterProducer.getClass)
+
   //create a twitter client
   TwitterProducer.run()
 
-  def run():Unit = {
-    println("Setup")
+  def run(): Unit = {
+    logger.info("Setup")
     val msgQueue: BlockingQueue[String] = new LinkedBlockingQueue[String](1000)
+
+    // connect to twitter client
     val client: Client = createTwitterClient(msgQueue)
     client.connect()
 
     //create kafka producer
-    val producer:KafkaProducer[String,String] = createKafkaProducer()
+//    val producer: KafkaProducer[String, String] = createKafkaProducer()
 
-    /*//add a shutdown hook
-    Runtime.getRuntime.addShutdownHook(new Thread {
-      println("Shutting down the application")
+    // add a shutdown hook
+    Runtime.getRuntime.addShutdownHook(new Thread(() => {
+      logger.info("Stopping Application...")
+      logger.info("Shutting down client from twitter...")
       client.stop()
-      producer.close()
-    })*/
+//      logger.info("Closing producer...")
+//      producer.close()
+      logger.info("Done!")
+    }))
+
     while (!client.isDone) {
-      var msg: String = ""
+      var msg: String = null
       try {
         msg = msgQueue.poll(5, TimeUnit.SECONDS)
       } catch {
         case e: InterruptedException => e.printStackTrace(); client.stop()
       }
-      if (msg != "") {
+      if (msg != null) {
         logger.info(msg)
-        /*producer.send(new ProducerRecord("twitter_tweets",msg),
-          (metadata: RecordMetadata, exception: Exception) => exception match {
-            case x => logger.error("Something bad happened",x)
-          }
+        /*val record: ProducerRecord[String, String] =
+          new ProducerRecord[String, String]("twitter_tweets",null,msg)
 
-      )*/
+        producer.send(record,
+          (metadata: RecordMetadata, exception: Exception) => {
+            if (exception != null) logger.error("Something bad happened" , exception)
+          })*/
       }
     }
-    logger.info("End of execution!")
   }
 
-  def createKafkaProducer():KafkaProducer[String,String] = {
+  def createKafkaProducer(): KafkaProducer[String, String] = {
     val props = new Properties()
     props.put("bootstrap.servers", "localhost:9092")
     props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer")
@@ -74,18 +85,17 @@ object TwitterProducer extends App {
     val terms = Lists.newArrayList("bitcoin")
     hosebirdEndpoint.trackTerms(terms)
     // These secrets should be read from a config file
-    val hosebirdAuth: Authentication = new OAuth1(consumerKey, consumerSecret, token, secret)
+    val hosebirdAuth: Authentication
+                    = new OAuth1(consumerKey, consumerSecret, token, secret)
 
 
-    val builder: ClientBuilder = new ClientBuilder()
-      .name("hosebird-Client-01") // optional: mainly for the logs
-      .hosts(hosebirdHosts)
-      .authentication(hosebirdAuth)
-      .endpoint(hosebirdEndpoint)
-      .processor(new StringDelimitedProcessor(msgQueue))
+    val builder: ClientBuilder = new ClientBuilder().name("hosebird-Client-01") // optional: mainly for the logs
+                                                    .hosts(hosebirdHosts)
+                                                    .authentication(hosebirdAuth)
+                                                    .endpoint(hosebirdEndpoint)
+                                                    .processor(new StringDelimitedProcessor(msgQueue))
     val hosebirdClient: Client = builder.build()
     hosebirdClient
-
   }
 
 }
