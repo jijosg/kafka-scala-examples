@@ -6,7 +6,7 @@ ThisBuild / organization := "com.jijo"
 
 lazy val root = (project in file("."))
   .settings(
-    name := "kafka-scala-exercises",
+    name := "kafka-scala-examples",
     libraryDependencies += scalaTest % Test,
     libraryDependencies += "org.apache.kafka" %% "kafka" % "2.4.1",
     libraryDependencies += "org.apache.kafka" % "kafka-clients" % "2.4.1",
