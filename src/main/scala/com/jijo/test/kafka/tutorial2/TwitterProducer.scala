@@ -9,12 +9,12 @@ import com.twitter.hbc.core.endpoint.StatusesFilterEndpoint
 import com.twitter.hbc.core.processor.StringDelimitedProcessor
 import com.twitter.hbc.core.{Client, Constants, Hosts, HttpHosts}
 import com.twitter.hbc.httpclient.auth.{Authentication, OAuth1}
-import org.apache.kafka.clients.producer.{KafkaProducer, ProducerRecord, RecordMetadata}
+import org.apache.kafka.clients.producer.{KafkaProducer, ProducerConfig, ProducerRecord, RecordMetadata}
 import org.slf4j.LoggerFactory
 
 /**
- * kafka-topics.sh --zookeeper localhost:2181  --create  --topic twitter_tweets --partition 6 --replication-factor 1
- *
+ * kafka-topics.sh --zookeeper localhost:2181  --create  --topic twitter_tweets --partitions 6 --replication-factor 1
+ * kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic twitter_tweets
  */
 object TwitterProducer extends App {
   val consumerKey = args(0)
@@ -36,15 +36,15 @@ object TwitterProducer extends App {
     client.connect()
 
     //create kafka producer
-//    val producer: KafkaProducer[String, String] = createKafkaProducer()
+    val producer: KafkaProducer[String, String] = createKafkaProducer()
 
     // add a shutdown hook
     Runtime.getRuntime.addShutdownHook(new Thread(() => {
       logger.info("Stopping Application...")
       logger.info("Shutting down client from twitter...")
       client.stop()
-//      logger.info("Closing producer...")
-//      producer.close()
+      logger.info("Closing producer...")
+      producer.close()
       logger.info("Done!")
     }))
 
@@ -57,22 +57,30 @@ object TwitterProducer extends App {
       }
       if (msg != null) {
         logger.info(msg)
-        /*val record: ProducerRecord[String, String] =
+        val record: ProducerRecord[String, String] =
           new ProducerRecord[String, String]("twitter_tweets",null,msg)
 
         producer.send(record,
           (metadata: RecordMetadata, exception: Exception) => {
             if (exception != null) logger.error("Something bad happened" , exception)
-          })*/
+          })
       }
     }
   }
 
   def createKafkaProducer(): KafkaProducer[String, String] = {
     val props = new Properties()
-    props.put("bootstrap.servers", "localhost:9092")
-    props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer")
-    props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer")
+    props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092")
+    props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer")
+    props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer")
+
+    // create safe producer
+    props.put(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG,"true")
+    props.put(ProducerConfig.ACKS_CONFIG,"all")
+    props.put(ProducerConfig.RETRIES_CONFIG,Int.MaxValue.toString)
+    props.put(ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION,"5") // for kafka >1.1 use 5 , use 1 otherwise
+
+    //create kafka producer
     val producer = new KafkaProducer[String, String](props)
     producer
   }
