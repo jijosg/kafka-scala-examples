@@ -58,11 +58,11 @@ object TwitterProducer extends App {
       if (msg != null) {
         logger.info(msg)
         val record: ProducerRecord[String, String] =
-          new ProducerRecord[String, String]("twitter_tweets",null,msg)
+          new ProducerRecord[String, String]("twitter_tweets", null, msg)
 
         producer.send(record,
           (metadata: RecordMetadata, exception: Exception) => {
-            if (exception != null) logger.error("Something bad happened" , exception)
+            if (exception != null) logger.error("Something bad happened", exception)
           })
       }
     }
@@ -75,10 +75,15 @@ object TwitterProducer extends App {
     props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer")
 
     // create safe producer
-    props.put(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG,"true")
-    props.put(ProducerConfig.ACKS_CONFIG,"all")
-    props.put(ProducerConfig.RETRIES_CONFIG,Int.MaxValue.toString)
-    props.put(ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION,"5") // for kafka >1.1 use 5 , use 1 otherwise
+    props.put(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, "true")
+    props.put(ProducerConfig.ACKS_CONFIG, "all")
+    props.put(ProducerConfig.RETRIES_CONFIG, Int.MaxValue.toString)
+    props.put(ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION, "5") // for kafka >1.1 use 5 , use 1 otherwise
+
+    // high throughput producer ( at the expense of a bit of latency and CPU usage)
+    props.put(ProducerConfig.COMPRESSION_TYPE_CONFIG, "snappy")
+    props.put(ProducerConfig.LINGER_MS_CONFIG, "20")
+    props.put(ProducerConfig.BATCH_SIZE_CONFIG, s"${32 * 1024}")
 
     //create kafka producer
     val producer = new KafkaProducer[String, String](props)
@@ -90,18 +95,18 @@ object TwitterProducer extends App {
     val hosebirdHosts: Hosts = new HttpHosts(Constants.STREAM_HOST)
     val hosebirdEndpoint: StatusesFilterEndpoint = new StatusesFilterEndpoint()
 
-    val terms = Lists.newArrayList("bitcoin")
+    val terms = Lists.newArrayList("bitcoin", "usa", "politics", "sports", "soccer")
     hosebirdEndpoint.trackTerms(terms)
     // These secrets should be read from a config file
     val hosebirdAuth: Authentication
-                    = new OAuth1(consumerKey, consumerSecret, token, secret)
+    = new OAuth1(consumerKey, consumerSecret, token, secret)
 
 
     val builder: ClientBuilder = new ClientBuilder().name("hosebird-Client-01") // optional: mainly for the logs
-                                                    .hosts(hosebirdHosts)
-                                                    .authentication(hosebirdAuth)
-                                                    .endpoint(hosebirdEndpoint)
-                                                    .processor(new StringDelimitedProcessor(msgQueue))
+      .hosts(hosebirdHosts)
+      .authentication(hosebirdAuth)
+      .endpoint(hosebirdEndpoint)
+      .processor(new StringDelimitedProcessor(msgQueue))
     val hosebirdClient: Client = builder.build()
     hosebirdClient
   }
